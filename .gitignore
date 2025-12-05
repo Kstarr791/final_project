@@ -1,0 +1,17 @@
+# Apptainer/Singularity containers
+software/containers/*.sif
+software/containers/*.img
+
+# Data directories (never commit data to git)
+data/
+
+# OSC and log files
+slurm-*.out
+*.o
+*.e
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*~
