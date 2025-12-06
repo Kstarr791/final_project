@@ -16,3 +16,6 @@ logs/
 *.tmp
 *~
  
+ # Analysis data
+
+analysis/
