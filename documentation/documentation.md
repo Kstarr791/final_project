@@ -1,5 +1,7 @@
 ## Getting Started
 
+See README.md for an overview of the project goals, data, and analysis workflow step by step.
+
 I will start with the installation page of the github for the Starfish suite of tools. (https://github.com/egluckthaler/starfish/wiki/Installation) 
 
 For installation, I will try the apptainer option, since that is what we have been working with the most in the class:
@@ -102,7 +104,7 @@ I also think this might be useful, since the Starfish software seems to use cond
 
 ## Preparing workspace
 
-I have copied the 2 files for my genome assembly and annotation to /data/references
+I have copied the 2 files for my genome assembly and annotation to /data/input
 
 ```
 conda activate starfish
@@ -133,12 +135,12 @@ cd analysis
 # Create the required subdirectories
 mkdir -p assembly gff3 blastdb
 
-# Copy YOUR files into the expected directory structure
+# Copy your files into the expected directory structure
 cp ../data/input/BUSCO_P_DX_prelim_2008299642.scaffolds.fa assembly/
 cp ../data/input/BUSCO_P_DX_prelim_2008299642.gff3 gff3/
 
-# OPTIONAL: Rename your files to match the tutorial's expected pattern if it makes it easier.
-# For example, to match '*.final.gff3':
+# Rename your files to match the tutorial's expected pattern.
+
 mv gff3/BUSCO_P_DX_prelim_2008299642.gff3 gff3/BUSCO_P_DX_prelim_2008299642.final.gff3
 
 mv assembly/BUSCO_P_DX_prelim_2008299642.scaffolds.fa assembly/BUSCO_P_DX_prelim_2008299642.scaffolds.fasta
@@ -159,4 +161,63 @@ realpath gff3/* | perl -pe 's/^(.+?([^\/]+?).final.gff3)$/\2\t\1/' > ome2gff.txt
 # Check the files were created correctly
 cat ome2assembly.txt
 cat ome2gff.txt
+```
+
+So far so good. 
+
+Executed commands for the BLAST database:
+
+```
+apptainer exec software/containers/starfish.sif makeblastdb \
+    -in analysis/blastdb/BUSCO_P_DX_prelim_2008299642.assemblies.fna \
+    -out analysis/blastdb/BUSCO_P_DX_prelim_2008299642.assemblies \
+    -parse_seqids \
+    -dbtype nucl
+```
+
+Files were created in `final_project/analysis/blastdb` successfully. 
+
+Performed this step:
+(Optional) Calculate GC content using the container's script.
+    ```
+    # This is also safe for the login node.
+    apptainer exec software/containers/starfish.sif /opt/conda/envs/starfish/aux/seq-gc.sh \
+    -Nbw 1000 \
+    analysis/blastdb/BUSCO_P_DX_prelim_2008299642.assemblies.fna \
+    > BUSCO_P_DX_prelim_2008299642.assemblies.gcContent_w1000.bed
+    ```
+But, it seems to not have worked. Checked with 
+```
+head data/intermediate/BUSCO_P_DX_prelim_2008299642.assemblies.gcContent_w1000.bed
+```
+No output. 
+```
+cat -n data/intermediate/BUSCO_P_DX_prelim_2008299642.assemblies.gcContent_w1000.bed
+```
+No output. 
+
+Confirmed the file ending in assemblies.fna exists at the expected location..
+
+Ran commands again and got this message in the terminal: "/opt/conda/envs/starfish/aux/seq-gc.sh: line 31: getopt: command not found"
+
+This is okay, the GC content is optional, and I have already calculated this previously if I need it later. 
+
+## Gene Finder Module
+
+`gene_finder.sh` contains the script for this module, it is located in /scripts 
+
+```
+# make executable. 
+chmod +x scripts/gene_finder.sh
+```
+
+Ready to be run, it is a slurm batch job. 
+
+```
+sbatch scripts/gene_finder.sh
+```
+
+```
+# Check status
+squeue -u $USER
 ```
