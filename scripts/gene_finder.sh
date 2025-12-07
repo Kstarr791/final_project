@@ -23,8 +23,10 @@ mkdir -p analysis/logs
 # Navigate to the analysis directory. This ensures all relative paths are correct.
 cd /fs/ess/PAS2880/users/kstarr791/final_project/analysis
 
-# Run the starfish annotate command.
-# The '-o geneFinder/' will create 'analysis/geneFinder/' as the result directory.
+# 1. CREATE the output directory before running starfish
+mkdir -p geneFinder
+
+# 2. Run the starfish annotate command.
 apptainer exec ../software/containers/starfish.sif \
     /opt/conda/envs/starfish/bin/starfish annotate \
     -T 4 \

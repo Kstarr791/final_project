@@ -221,3 +221,21 @@ sbatch scripts/gene_finder.sh
 # Check status
 squeue -u $USER
 ```
+
+Okay, good news is that the script ran fine! Bad news is that there was an error related to the file paths. I need to update the script. 
+
+The script is updated and the job is re-submitted. The first failed attempt ran for less than 10 seconds. At present, the updated script has been running for over a minute. 
+
+The script ran successfully this time. There are a lot of error messages in the error log (located at analysis/logs), almost 12600 lines that say some variation of "[Sat Dec  6 22:13:19 2025] error: scaffold_1	funannotate	mRNA	68859	72555	.	+	.	ID=FUN_000001-T1;Parent=FUN_000001;product=hypothetical protein; in /fs/ess/PAS2880/users/kstarr791/final_project/analysis/gff3/BUSCO_P_DX_prelim_2008299642.final.gff3 does not have a parse-able featureID using namefield 'Name='. Make sure ALL gene feature names are are stored in the attributes column like <namefield><geneName>"
+
+It appears that the original file is not formatted correctly for this analysis. 
+Interestingly though, the output log says "[Sat Dec  6 22:09:43 2025] running metaeuk easy-predict for 1 assemblies..
+[Sat Dec  6 22:13:11 2025] running hmmsearch on metaeuk annotations..
+[Sat Dec  6 22:13:19 2025] filtering metaeuk annotations based on hmmsearch results..
+[Sat Dec  6 22:13:19 2025] checking formatting of GFFs in ome2gff.txt..
+[Sat Dec  6 22:13:19 2025] lifting over names of overlapping feature from GFFs in ome2gff.txt to metaeuk annotations with bedtools..
+[Sat Dec  6 22:13:24 2025] no metaeuk genes intersect with gene features in ome2gff.txt, so there are no gene names to lift over
+[Sat Dec  6 22:13:24 2025] found 21 new tyr genes and 0 tyr genes that overlap with 0 existing genes
+[Sat Dec  6 22:13:24 2025] done"
+
+It seems to have identified tyr genes, but I'm concerned about the formatting errors. I will need to refer to the manual and reconvene. 
