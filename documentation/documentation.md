@@ -229,13 +229,44 @@ The script is updated and the job is re-submitted. The first failed attempt ran 
 The script ran successfully this time. There are a lot of error messages in the error log (located at analysis/logs), almost 12600 lines that say some variation of "[Sat Dec  6 22:13:19 2025] error: scaffold_1	funannotate	mRNA	68859	72555	.	+	.	ID=FUN_000001-T1;Parent=FUN_000001;product=hypothetical protein; in /fs/ess/PAS2880/users/kstarr791/final_project/analysis/gff3/BUSCO_P_DX_prelim_2008299642.final.gff3 does not have a parse-able featureID using namefield 'Name='. Make sure ALL gene feature names are are stored in the attributes column like <namefield><geneName>"
 
 It appears that the original file is not formatted correctly for this analysis. 
-Interestingly though, the output log says "[Sat Dec  6 22:09:43 2025] running metaeuk easy-predict for 1 assemblies..
+Interestingly though, the output log says: 
+
+*[Sat Dec  6 22:09:43 2025] running metaeuk easy-predict for 1 assemblies..
 [Sat Dec  6 22:13:11 2025] running hmmsearch on metaeuk annotations..
 [Sat Dec  6 22:13:19 2025] filtering metaeuk annotations based on hmmsearch results..
 [Sat Dec  6 22:13:19 2025] checking formatting of GFFs in ome2gff.txt..
 [Sat Dec  6 22:13:19 2025] lifting over names of overlapping feature from GFFs in ome2gff.txt to metaeuk annotations with bedtools..
 [Sat Dec  6 22:13:24 2025] no metaeuk genes intersect with gene features in ome2gff.txt, so there are no gene names to lift over
-[Sat Dec  6 22:13:24 2025] found 21 new tyr genes and 0 tyr genes that overlap with 0 existing genes
-[Sat Dec  6 22:13:24 2025] done"
+**[Sat Dec  6 22:13:24 2025] found 21 new tyr genes and 0 tyr genes that overlap with 0 existing genes
+[Sat Dec  6 22:13:24 2025] done***
 
-It seems to have identified tyr genes, but I'm concerned about the formatting errors. I will need to refer to the manual and reconvene. 
+It seems to have identified 21 tyr genes, but I'm concerned about the formatting errors. I will need to refer to the manual and reconvene. 
+
+It seems that this error is explaining that naming conventions and the "lifting over" function is a way to transfer gene names from an existing annotation to a new one based on overlapping coordinates (tyr genes found). This might be relevant if any of the tyr genes that were found overlap with existing genes in the original annotation, but it does say that 0 tyr genes overlap with existing genes. Therefore, this should not be a problem. 
+
+### Consolidate
+
+I am ready to continue the pipeline. It is now time to consolidate. I have created the script for this step `scripts/consolidate.sh`.
+
+I submitted a job using `sbatch scripts/consolidate.sh` and I am checking the status of the job using `squeue -u $USER`. It is not showing up in the queue, but no job failure message was generated in the terminal. It is meant to be a pretty fast step, so I will check the outputs. The expected file, `analysis/BUSCO_tyr.filt.consolidated.gff` does exist, and is populated with over 2000 lines of text, so I will consider this step to have completed successfully. 
+
+### Sketch
+
+Instead of creating a new slurm script for the next step, I am using a simple chain of commands from the tutorial, which are as follows:
+
+```
+cd analysis
+apptainer exec ../software/containers/starfish.sif /opt/conda/envs/starfish/bin/starfish sketch \
+    -m 10000 \
+    -q geneFinder/BUSCO_tyr.filt.ids \
+    -g ome2consolidatedGFF.txt \
+    -i s \
+    -x BUSCO \
+    -o geneFinder/
+```
+
+This was successful, it merged any tyr regions that were within 10000 bp of each other, bringing our 21 suspected tyr genes to 19 gene "neighborhoods". 
+
+This concludes the Gene Finder module. 
+
+## Element Finder Module

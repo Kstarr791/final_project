@@ -6,7 +6,7 @@
 
 ## Data
 *   **Genome Assembly:** `BUSCO_P_DX_prelim_2008299642.scaffolds.fasta`
-*   **Gene Annotation:** `BUSCO_P_DX_prelim_2008299642.final.gff3`
+*   **Gene Annotation:** `BUSCO_P_DX_prelim_2008299642.final.gff3` 
 
 ## Analysis Workflow:
 
@@ -61,7 +61,7 @@ analysis/blastdb/BUSCO_P_DX_prelim_2008299642.assemblies.fna \
 ## 3.  **Gene Finder Module:** 
 Identifies candidate 'captain' genes (tyrosine recombinases).
 
-`gene_finder.sh` contains the script for this module, it is located in /scripts 
+`gene_finder.sh` contains the script for this module, it is located in `/scripts` 
 
 ```
 # make executable. 
@@ -77,6 +77,26 @@ sbatch scripts/gene_finder.sh
 # Check status
 squeue -u $USER
 ```
+
+### Consolidate
+`scripts/consolidate.sh` is the slurm script. 
+Job will be submitted as above using `sbatch scripts/consolidate.sh`
+
+### Sketch
+
+```
+cd analysis
+apptainer exec ../software/containers/starfish.sif /opt/conda/envs/starfish/bin/starfish sketch \
+    -m 10000 \
+    -q geneFinder/BUSCO_tyr.filt.ids \
+    -g ome2consolidatedGFF.txt \
+    -i s \
+    -x BUSCO \
+    -o geneFinder/
+```
+This was a simple chain of commands, but it can also be prepared as a slurm script like `gene_finder` and `consolidate` before. New files should be generated in the `geneFinder/` dir with suffixes .bed and .mat.
+
+Gene Finder Module is now complete.
 
 4.  **Element Finder Module:** Predicts mobile element boundaries around captains.
 
