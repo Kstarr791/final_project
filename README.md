@@ -106,6 +106,71 @@ Create a dedicated directory for good housekeeping:
 
 The first script for this module is `insert.sh` located in `scripts/`.
 
+## This project from this point forward will not produce useful results due to nothing found in the preceeding step. 
 
+I will adapt the software pipeline to simply complete it, but if trying this with a different genome, from this point forward you should follow the step by step tutorial to stay on track. 
 
-5.  **Region Finder Module:** Contextualizes elements across genomic regions.
+### Summarize
+
+Inserting an empty `.insert.bed` file for the program to continue. 
+
+```
+cd /fs/ess/PAS2880/users/kstarr791/final_project/analysis
+touch elementFinder_sensitive/empty_insert.bed
+```
+
+Construct the adapted summarize Command
+
+```
+apptainer exec ../software/containers/starfish.sif /opt/conda/envs/starfish/bin/starfish summarize \
+    -a ome2assembly.txt \
+    -b elementFinder_sensitive/empty_insert.bed \
+    -x BUSCO \
+    -o elementFinder_sensitive/ \
+    -g ome2consolidatedGFF.txt \
+    -t geneFinder/BUSCO_tyr.filt.ids
+```
+
+We have removed `-S elementFinder/*.insert.stats` (there is no stats file) and `-A ann/*.gene2emap.txt`. 
+
+This did run and produced the expected files which are all empty, as anticipated.  Considering all downstream processes will continue to produce empty files, I will terminate the pipeline process and move to producing a graphic for the existing results.
+
+5. ## Visualizing data
+
+Make a plot that maps the discovered tyr genes:
+
+```
+# Load necessary libraries (install if needed)
+if (!require("ggplot2")) install.packages("ggplot2", repos="http://cran.r-project.org")
+if (!require("gggenes")) install.packages("gggenes", repos="http://cran.r-project.org")
+library(ggplot2)
+library(gggenes)
+
+# --- SET YOUR PATHS HERE ---
+# The path to your GFF file on OSC
+gff_file <- "/fs/ess/PAS2880/users/kstarr791/final_project/analysis/geneFinder/BUSCO_tyr.filt.gff"
+# Where to save the plot
+output_plot <- "/fs/ess/PAS2880/users/kstarr791/final_project/figures/tyr_gene_map.png"
+# ---------------------------
+
+# Read the GFF file. We only need columns: scaffold, source, feature, start, end, strand.
+tyr_data <- read.table(gff_file, sep="\t", header=FALSE, comment.char="#")
+# Keep only relevant columns (adjust indices if your GFF format differs)
+tyr_genes <- tyr_data[, c(1, 3, 4, 5, 7)]
+colnames(tyr_genes) <- c("scaffold", "feature", "start", "end", "strand")
+
+# Create a basic gene arrow map
+p <- ggplot(tyr_genes, aes(xmin = start, xmax = end, y = scaffold, 
+                            fill = strand, forward = (strand == "+"))) +
+    geom_gene_arrow(arrowhead_height = unit(3, "mm"), arrowhead_width = unit(2, "mm")) +
+    facet_wrap(~ scaffold, scales = "free_y", ncol = 1) +
+    theme_genes() +
+    labs(title = "Distribution of Predicted Tyrosine Recombinase (tyr) Genes",
+         x = "Genomic Position (bp)", y = "Scaffold") +
+    scale_fill_manual(values = c("+" = "steelblue", "-" = "coral2"))
+
+# Save the plot
+dir.create(dirname(output_plot), showWarnings = FALSE, recursive = TRUE)
+ggsave(output_plot, plot = p, width = 12, height = 8, dpi = 300)
+print(paste("Plot saved to:", output_plot))
+```

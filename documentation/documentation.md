@@ -534,3 +534,84 @@ The single-genome approach is a limitation. The algorithm may rely heavily on fi
 At this point, I have tried 5 different versions of the `insert` script. All are documented in `scripts/`, the various attempts were made to essentially widen the search for the candidate repeats associated with the 19 tyr genes from previous steps. We still have a null result. 
 
 I will continue the software pipeline just for the sake of completion. 
+
+### `summarize`
+
+Inserting an empty `.insert.bed` file for the program to continue. 
+
+```
+cd /fs/ess/PAS2880/users/kstarr791/final_project/analysis
+touch elementFinder_sensitive/empty_insert.bed
+```
+
+Construct the adapted summarize Command
+
+```
+apptainer exec ../software/containers/starfish.sif /opt/conda/envs/starfish/bin/starfish summarize \
+    -a ome2assembly.txt \
+    -b elementFinder_sensitive/empty_insert.bed \
+    -x BUSCO \
+    -o elementFinder_sensitive/ \
+    -g ome2consolidatedGFF.txt \
+    -t geneFinder/BUSCO_tyr.filt.ids
+```
+
+We have removed `-S elementFinder/*.insert.stats` (there is no stats file) and `-A ann/*.gene2emap.txt`. 
+
+Terminal output:
+```
+identifying large mobile genetic elements by their boundary features..
+identifying nested and overlapping elements..
+we have for a total of 0 elements
+found 0 elements nested/overlapping with 0 other elements
+printing data..
+done
+```
+
+It produced output files that are empty, as expected. 
+
+All downstream processes will continue to produce empty files, so I am going to terminate the process and focus on seeing if I can produce any useful graphics from what was already achieved. 
+
+### R visualization 
+I will try to make a gene position plot with R studio to see the tyrosine recombinase genes that were located mapped in the genome. 
+
+```
+# Load necessary libraries (install if needed)
+if (!require("ggplot2")) install.packages("ggplot2", repos="http://cran.r-project.org")
+if (!require("gggenes")) install.packages("gggenes", repos="http://cran.r-project.org")
+library(ggplot2)
+library(gggenes)
+
+# --- SET YOUR PATHS HERE ---
+# The path to your GFF file on OSC
+gff_file <- "/fs/ess/PAS2880/users/kstarr791/final_project/analysis/geneFinder/BUSCO_tyr.filt.gff"
+# Where to save the plot
+output_plot <- "/fs/ess/PAS2880/users/kstarr791/final_project/figures/tyr_gene_map.png"
+# ---------------------------
+
+# Read the GFF file. We only need columns: scaffold, source, feature, start, end, strand.
+tyr_data <- read.table(gff_file, sep="\t", header=FALSE, comment.char="#")
+# Keep only relevant columns (adjust indices if your GFF format differs)
+tyr_genes <- tyr_data[, c(1, 3, 4, 5, 7)]
+colnames(tyr_genes) <- c("scaffold", "feature", "start", "end", "strand")
+
+# Create a basic gene arrow map
+p <- ggplot(tyr_genes, aes(xmin = start, xmax = end, y = scaffold, 
+                            fill = strand, forward = (strand == "+"))) +
+    geom_gene_arrow(arrowhead_height = unit(3, "mm"), arrowhead_width = unit(2, "mm")) +
+    facet_wrap(~ scaffold, scales = "free_y", ncol = 1) +
+    theme_genes() +
+    labs(title = "Distribution of Predicted Tyrosine Recombinase (tyr) Genes",
+         x = "Genomic Position (bp)", y = "Scaffold") +
+    scale_fill_manual(values = c("+" = "steelblue", "-" = "coral2"))
+
+# Save the plot
+dir.create(dirname(output_plot), showWarnings = FALSE, recursive = TRUE)
+ggsave(output_plot, plot = p, width = 12, height = 8, dpi = 300)
+print(paste("Plot saved to:", output_plot))
+```
+
+This output a plot in `final_project/figures`. Interestingly, the size of the tyr genes all seem to be fairly short in bp, with one exception in scaffold 776. I might attempt to do more analyss on this. I'm not yet sure what the relevance of that finding could be, if any. 
+
+I will try to use a standalone tool called RepeatModeler that can look for genomic repeats, perhaps mapping those and overlaying them if possible would give some insights into the possibility of Starfish's features being not well suited for this particular genome. 
+
