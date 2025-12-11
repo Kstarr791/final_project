@@ -615,3 +615,52 @@ This output a plot in `final_project/figures`. Interestingly, the size of the ty
 
 I will try to use a standalone tool called RepeatModeler that can look for genomic repeats, perhaps mapping those and overlaying them if possible would give some insights into the possibility of Starfish's features being not well suited for this particular genome. 
 
+
+I will use RepeatModeler to look for genomic repeats. 
+DeepSeek AI recommends that we do this via conda. 
+
+```
+module load miniconda3
+conda create -y -n repeatmodeler
+conda activate repeatmodeler
+``` 
+
+That did not work, I got errors that it cannot be loaded this way. 
+
+```
+# 1. Load the specific version of miniconda3
+module load miniconda3/24.1.2-py310
+
+# 2. Create the dedicated environment
+conda create -y -n repeatmodeler_env python=3.10
+
+# 3. Activate the environment
+conda activate repeatmodeler_env
+
+# 4. Install RepeatModeler and RepeatMasker from the bioconda channel
+conda install -y -c bioconda repeatmodeler repeatmasker
+```
+
+This worked. 
+
+Using 
+```
+which RepeatModeler
+which RepeatMasker
+```
+
+Output paths, so we should be good to go! 
+The job will take a long time, since it is parsing the entire genome, so I will submit this as a batch job to run overnight. 
+
+I'm going to try an additional R script provided by DeepSeek AI to try to analyze the tyr genes in context of the genome. This is just for fun, and I certainly do not understand the complexity of this script. 
+
+the script is `scripts/tyr_gene_summary.R`.
+the output is `figures/tyr_gene_summary.png`
+
+I made a few modifications to the script and saved it as `scripts/tyr_gene_summary_refined.R` and the output is `figures/tyr_gene_summary_refined.png`. 
+
+This is actually a really intereting graphic that shows the distribution of the sizes of the predicted tyr genes and their locations per-scaffold, as well as where in the scaffold they are begin. I'm very pleased with this project despite turning up no candidate starship elements. 
+
+At this time, RepeatModeler continues to run overnight. I will check the results tomorrow and see if any repeats were identified that might correspond to the locations of the tyr genes.
+
+the outputs of RepeatModeler are located in `final_project/analysis/assembly/RM_2529430.ThuDec110211332025`. This was not intentional, I forgot to set the output directory in the script, so it just began writing to the working directory, which is set within the script to be /assembly, where the input genome is located. I can do some cleanup later if need be, but it is fairly contained. 

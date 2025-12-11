@@ -174,3 +174,66 @@ dir.create(dirname(output_plot), showWarnings = FALSE, recursive = TRUE)
 ggsave(output_plot, plot = p, width = 12, height = 8, dpi = 300)
 print(paste("Plot saved to:", output_plot))
 ```
+
+6.  **RepeatModeler**
+
+I will use RepeatModeler to look for genomic repeats. 
+DeepSeek AI recommends that we do this via conda. 
+
+```
+# 1. Load the specific version of miniconda3
+module load miniconda3/24.1.2-py310
+
+# 2. Create the dedicated environment
+conda create -y -n repeatmodeler_env python=3.10
+
+# 3. Activate the environment
+conda activate repeatmodeler_env
+
+# 4. Install RepeatModeler and RepeatMasker from the bioconda channel
+conda install -y -c bioconda repeatmodeler repeatmasker
+``` 
+### Note
+
+Conda environments are active for your current terminal session. If you log out and back in, you'll need to run module load miniconda3/24.1.2-py310 and conda activate repeatmodeler_env again.
+When you write the Slurm script to run RepeatModeler (which you should, as it's a long job), you must include these same module load and conda activate commands at the top of the script.
+
+After running the install, verify the tools are available:
+```
+which RepeatModeler
+which RepeatMasker
+```
+
+Successful install should give outputs of paths for those commands.  Once successful, you may submit as a batch job. 
+
+Created slurm batch script to run the RepeatModeler overnight (12-18 hour completion window predicted for ~126 Mbp genome size)
+
+Script is found at `/scripts/run_repeatmodeler.sbatch`
+
+```
+# Make script executable
+chmod +x scripts/run_repeatmodeler.sbatch
+```
+
+```
+# Submit slurm job
+sbatch scripts/run_repeatmodeler.sbatch
+```
+
+```
+# Check job status
+squeue -u $USER
+```
+
+I will attempt to do an additional R script *just for fun* that I will have DeepSeek AI produce for me for my own curiosity's sake.
+Further analysis of tyr genes, we will be creating a multi-panel summary figure that answers three key questions:
+
+    1. How long are the tyr genes? (Histogram)
+
+    2. Where are they on the scaffolds? (Scatter plot)
+
+    3. What are the sizes of their genomic neighborhoods? (Bar chart, highlighting the largest)
+
+`scripts/tyr_gene_summary.R`
+
+The output: `figures/tyr_gene_summary.png`
