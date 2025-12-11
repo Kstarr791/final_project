@@ -270,3 +270,267 @@ This was successful, it merged any tyr regions that were within 10000 bp of each
 This concludes the Gene Finder module. 
 
 ## Element Finder Module
+
+We now create a script for the first step of the module, `insert.sh` located in `scripts/`
+
+I ran this script and it was finished in a surprisingly short time - perhaps this is because we are working with only a single genome. Time to check the outputs. 
+
+This file was created: final_project/analysis/elementFinder/checkpoints/BUSCO.insert.element_upstream_search.checkpoint, it is the only thing inside elementFinder/
+
+But it cannot be read using head command. 
+
+I checked the logs. out: "=== Starting Element Finder (insert) Job ===
+Job ID: 42420743
+Start Time: Tue Dec  9 02:42:05 AM EST 2025
+[Tue Dec  9 02:42:09 2025] executing command: starfish insert -T 2 -a ome2assembly.txt -d blastdb/BUSCO_P_DX_prelim_2008299642.assemblies -b geneFinder/BUSCO.bed -i tyr -x BUSCO -o elementFinder/
+Key parameters:
+--upstream             0-8000
+--downstream           0-5000
+--length               15000-800000
+--pid                  90
+--hsp                  1000
+minDR                  4
+maxDR                  40
+maxEmptySiteLength     2000
+maxElementLengthFlag   800000
+minElementLengthFlag   15000
+maxInsertCoverage      0.25
+maxUpDownCoverage      0.25
+blastn                 -task dc-megablast -evalue 0.0001 -max_target_seqs 1000000
+nucmer                 --mum
+delta-filt             -m -l 1000 -i 90
+
+[Tue Dec  9 02:42:09 2025] reading in data..
+[Tue Dec  9 02:42:10 2025] parsing upstream regions of 19 candidate tyr captains..
+[Tue Dec  9 02:42:10 2025] searching for hits to the upstream regions of 19 candidate tyr captains..
+Job finished successfully at: Tue Dec  9 02:42:10 AM EST 2025"
+
+error log: "found 0 tyr captains with candidate insertion sites, exiting.."
+
+Alright, this is a problem. I will consult the manual as well as DeepSeek AI to help me reconcile the issue. 
+
+I shared the relevant steps of the tutorial and my outputs with DeepSeek, and here is its response:
+
+```
+The results for your starfish insert job indicate the core search worked, but the tool found zero candidate mobile elements. This is not necessarily an error with your setup, but a specific biological outcome that needs investigation. None of the provided search results could directly address the Starfish pipeline or this specific issue.
+
+Since the primary issue is likely biological (e.g., low sequence similarity, unique genome biology, or data-specific factors), here is a detailed diagnostic plan and a potential solution for you to follow.
+
+🔍 Diagnosing the "Found 0 Captains" Result
+The starfish insert command uses a BLAST-based search to find the upstream boundary of an element. The message "found 0 tyr captains with candidate insertion sites" means none of your 19 candidate neighborhoods passed the initial filtering criteria. This could be due to several reasons related to your unique genome data:
+
+Stringent Default BLAST Parameters: The job log shows default parameters like --pid 90 (90% sequence identity) and --hsp 1000 (1000 bp high-scoring pair length). Your Macrophomina phaseolina sequences may not share 90% identity over 1000 bp stretches with any sequence in the BLAST database (which is just your own genome).
+
+Unique or Divergent Genome: Mobile elements in your strain might be highly divergent from any consensus or reference sequences the algorithm expects, or they may have a very different structure.
+
+BLAST Database Content: The BLAST database only contains your single genome. The algorithm searches for self-similarity (upstream regions matching elsewhere in the same genome). If the mobile elements are unique or recent insertions, they may not have paralogous sequences to match against.
+```
+
+This is frustrating, but the AI is trying to produce some ideas for continuing. 
+
+```
+Step 1: Check the Tutorial's Notes on Single-Genome Analysis
+Re-examine the tutorial, particularly the note you mentioned earlier: "Note that if you are annotating Starships on a per-genome level, the focal genome must be included in the blast database." Your setup is correct here. The tutorial's successful example used 6 genomes, providing a richer database for finding homologous sequences. Your single-genome analysis is inherently more challenging.
+
+Step 2: Modify Parameters and Re-run starfish insert
+The most direct action is to relax the search parameters in a new Slurm script. Focus on lowering the percent identity (--pid) and the required alignment length.
+
+Here is an example of how to modify your command for a more sensitive search:
+
+bash
+apptainer exec ../software/containers/starfish.sif /opt/conda/envs/starfish/bin/starfish insert \
+    -T 4 \
+    -a ome2assembly.txt \
+    -d blastdb/BUSCO_P_DX_prelim_2008299642.assemblies \
+    -b geneFinder/BUSCO.bed \
+    -i tyr \
+    -x BUSCO \
+    -o elementFinder/ \
+    --pid 70 \          # Lower identity threshold from 90% to 70%
+    --hsp 500           # Lower HSP length from 1000 bp to 500 bp
+Create a new script (e.g., scripts/04_insert_relaxed.sbatch) with these changes, increase the time limit, and submit it.
+
+Step 3: Consult the Manual for Additional Parameters
+Look for other tunable parameters in the starfish manual under the insert command. Parameters controlling the upstream/downstream search window (--upstream, --downstream) or alignment significance (-evalue for the internal blastn command) could also be relevant.
+```
+
+I fed back the relevant manual portion to the AI and this was its recommendation:
+
+```
+Thank you for sharing the manual. It provides crucial context and confirms that your script adjustment is exactly the right first step. The issue lies in the stringent default filters—specifically the --pid 90 (90% identity) and --hsp 1000 (1000 bp alignment length) parameters you saw in the logs. For divergent sequences or a single-genome analysis, these are often too strict.
+
+🔬 Key Insight from the Manual
+The manual explains the algorithm searches for alignments between "flanking regions" in different genomes. Since your BLAST database contains only your single genome, the tool is looking for self-similarity (e.g., paralogous sequences or repeated elements within your own genome). If your elements are unique or recently inserted, they may not have strong internal repeats meeting the 90%/1000bp threshold.
+
+✅ Recommended Action: Adjust Parameters and Re-run
+Your plan to modify the script is the most efficient path forward. Relaxing the filters will allow the algorithm to detect more divergent or shorter homologous sequences, which is essential for a single-genome search.
+```
+
+The note about highly divergent genomes is interesting, because the one that I am working with is an unknown species in an unknown genus. Only the family is known with confidence, so it might be that there is a large dissimilarity that is causing issues here. The Starfish software is still in v1.0.0, and the manual states 
+
+*"For each possible alignment between two different genomes for a given element, the single longest blastn alignment is chosen and all others ignored. This may not always be the best way to identify a homologous pairwise alignment, especially between more divergent genomes. This feature may be improved in future releases, e.g., by chaining together alignments within a certain distance of each other and identifying the longest of such alignment neighborhoods."*
+
+Okay. I will proceed with the adapted script with relaxed parameters and see what happens. 
+
+```
+Here are the specific adjustments to make in your new Slurm script:
+
+bash
+apptainer exec ../software/containers/starfish.sif /opt/conda/envs/starfish/bin/starfish insert \
+    -T 4 \
+    -a ome2assembly.txt \
+    -d blastdb/BUSCO_P_DX_prelim_2008299642.assemblies \
+    -b geneFinder/BUSCO.bed \
+    -i tyr \
+    -x BUSCO \
+    -o elementFinder_relaxed/ \  # Use a NEW output directory
+    --pid 70 \          # Lower percent identity from 90% to 70%
+    --hsp 500 \         # Lower HSP length from 1000 bp to 500 bp
+    --flankcov 0.7      # Consider lowering if alignments are short (default likely 0.8)
+Crucial Steps:
+
+Use a New Output Directory: The manual warns that checkpoint files from the previous run must be removed if parameters change. Using a new directory (e.g., elementFinder_relaxed/) is the safest way to ensure a clean restart.
+
+Remove Old Checkpoints: If you reuse elementFinder/, you must delete the checkpoint file first: rm -rf analysis/elementFinder/checkpoints/.
+```
+
+First, I give the AI context that my genome is a novel species and genus, and I also recommend including more closely related genomes to my pipeline to give more robust pairwise alignments for the tools. Here is the response:
+
+```
+Your genome's phylogenetic novelty is likely the core reason why the stringent default parameters (--pid 90, --hsp 1000) failed. Mobile elements in an uncharacterized, divergent lineage are far less likely to have highly conserved, long stretches of self-similarity within its own genome.
+
+🎯 Re-evaluating Your Options in Light of Novelty
+Given this new information, here's how your two options weigh:
+
+Adjusting Parameters (Path 1): This becomes even more critical. You will likely need to relax the thresholds substantially to find divergent, genus-specific mobile elements. Parameters like --pid 70 and --hsp 500 may still be too strict. You might need to go as low as --pid 50 and --hsp 200 as an initial exploratory search.
+
+Adding Related Genomes (Path 2): This strategy faces a major hurdle. If your genome is from an unknown genus sister to Tarzetta, the available "closely related" genomes in public databases (likely other Tarzetta species) may still be too evolutionarily distant. The mobile elements you're looking for might be genus- or even species-specific, meaning they wouldn't be shared with Tarzetta, making the cross-genome search ineffective.
+
+✅ Action Plan: Start with a Broad Parameter Sweep
+Given the challenges with Path 2, I recommend a focused, stepwise approach with Path 1.
+
+Step 1: Run a Highly Sensitive Exploratory Search
+Create and submit a new Slurm script designed to cast a very wide net. We'll dramatically lower the thresholds and also consider adjusting the search windows.
+
+bash
+#!/bin/bash
+#SBATCH --job-name=starfish_insert_sensitive
+#SBATCH --account=PAS2880
+#SBATCH --time=12:00:00          # Allow more time for a broader search
+#SBATCH --nodes=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=16G
+#SBATCH --output=analysis/logs/insert_sensitive_%j.out
+#SBATCH --error=analysis/logs/insert_sensitive_%j.err
+
+set -euo pipefail
+
+cd /fs/ess/PAS2880/users/kstarr791/final_project/analysis
+
+# Use a CLEAN output directory
+OUT_DIR="elementFinder_sensitive"
+mkdir -p $OUT_DIR
+
+echo "=== Starting SENSITIVE Element Finder Search ==="
+echo "Genome context: Novel, phylogenetically divergent"
+echo "Parameters set for high sensitivity (low pid, short hsp)"
+
+apptainer exec ../software/containers/starfish.sif /opt/conda/envs/starfish/bin/starfish insert \
+    -T 4 \
+    -a ome2assembly.txt \
+    -d blastdb/BUSCO_P_DX_prelim_2008299642.assemblies \
+    -b geneFinder/BUSCO.bed \
+    -i tyr \
+    -x BUSCO_sensitive \
+    -o $OUT_DIR \
+    --pid 50 \          # Very low identity threshold
+    --hsp 200 \         # Very short alignment threshold
+    --flankcov 0.5      # Reduced flank alignment coverage filter
+    --upstream 0-12000 \ # Widen the search window upstream
+    --downstream 0-8000  # Widen the search window downstream
+
+echo "Job finished at: $(date)"
+Step 2: Interpret the Results
+
+If this search finds candidates: Success! You can then gradually tighten the parameters (e.g., --pid 60, --hsp 300) in subsequent runs to find the optimal balance between sensitivity and specificity for your novel genome.
+
+If this search still finds 0 candidates: It becomes strong evidence that either:
+a) Your genome truly lacks the specific type of Starship elements Starfish is designed to find, or
+b) The elements are so novel that even a self-similarity search within one genome fails, and a different methodological approach may be needed.
+```
+I'll try this latest suggestion first. 
+
+Still failed. 
+Now seems we are having unexpected issues with syntax.
+
+```
+#!/bin/bash
+#SBATCH --job-name=starfish_insert_sensitive
+#SBATCH --account=PAS2880
+#SBATCH --time=04:00:00           # Reduced from 12 hours. Will start smaller.
+#SBATCH --nodes=1
+#SBATCH --cpus-per-task=2         # Matches the command's -T 2 flag.
+#SBATCH --mem=8G                  # Reduced from 16G; BLAST is not extremely memory-heavy for your dataset.
+#SBATCH --output=analysis/logs/insert_sensitive_%j.out
+#SBATCH --error=analysis/logs/insert_sensitive_%j.err
+
+set -euo pipefail
+
+cd /fs/ess/PAS2880/users/kstarr791/final_project/analysis
+
+# Use a CLEAN output directory
+OUT_DIR="elementFinder_sensitive"
+mkdir -p $OUT_DIR
+
+echo "=== Starting SENSITIVE Element Finder Search ==="
+echo "Genome context: Novel, phylogenetically divergent"
+echo "Parameters set for high sensitivity (low pid, short hsp)"
+
+apptainer exec ../software/containers/starfish.sif /opt/conda/envs/starfish/bin/starfish insert \
+    -T 2 \
+    -a ome2assembly.txt \
+    -d blastdb/BUSCO_P_DX_prelim_2008299642.assemblies \
+    -b geneFinder/BUSCO.bed \
+    -i tyr \
+    -x BUSCO_sensitive \
+    -o elementFinder_sensitive \
+    --pid 50 \
+    --hsp 200 \
+    --flankcov 0.5 \
+    --upstream 0-20000 \  # Search up to 20kb upstream (default was 0-8000)
+    --downstream 0-15000  # Search up to 15kb downstream (default was 0-5000)
+
+echo "Job finished at: $(date)"
+```
+
+The option `--flankcov` is being flagged as unknown. I noticed that the command to find the version of Starfish accepted "starfish version" rather than "starfish --version", so I began to suspect something was weird with the syntax. 
+DeepSeek AI gave me this command to check the actual updated list of arguments and options:
+
+```
+apptainer exec software/containers/starfish.sif /opt/conda/envs/starfish/bin/starfish insert -h
+```
+
+And indeed the `--flankcov` option is missing entirely!
+It seems that the manual on github might be outdated compared to the actual software's operation now, at least through apptainer. The new options show `--updowncov` has replaced `--flankcov`  We will adjust the script again. --flankcov is removed from the updated script and rerun. 
+
+Unfortunately, despite seeming to run properly this time with no script errors, it still says it found 0 tyr captains with candidate insertion sites. 
+
+This is DeepSeek's response to this information:
+
+"The result is now clear: even with significantly relaxed parameters (--pid 50, --hsp 200), the starfish insert algorithm found zero candidate mobile elements in your novel genome.
+
+This is a definitive computational result, not a script error. It provides strong evidence for a key biological conclusion about your data.
+Interpreting the "0" Result
+The starfish insert command is designed to find large, discrete mobile elements (Starships) by detecting self-similarity—specifically, long, high-identity DNA repeats that flank a "captain" gene.
+
+Finding 0 candidates with sensitive settings means one of the following is true for your genome:
+
+The genome lacks this specific type of element. The tyrosine recombinase ("tyr") genes you found may not be part of large, bounded Starships. They could be solitary, part of smaller elements, or associated with different repeat structures that Starfish doesn't target.
+
+The elements are too novel or degraded. Any flanking repeats may be so divergent, short, or fragmented that they fall below even your relaxed detection thresholds (<50% identity or <200 bp).
+
+The single-genome approach is a limitation. The algorithm may rely heavily on finding the same element inserted in multiple locations within or across genomes. A unique, single insertion in one genome is invisible to this method."
+
+At this point, I have tried 5 different versions of the `insert` script. All are documented in `scripts/`, the various attempts were made to essentially widen the search for the candidate repeats associated with the 19 tyr genes from previous steps. We still have a null result. 
+
+I will continue the software pipeline just for the sake of completion. 

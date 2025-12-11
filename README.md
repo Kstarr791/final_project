@@ -1,8 +1,10 @@
 # Starfish Analysis Project
 
 **Goal:** Identify giant mobile genetic elements (Starships) in a fungal genome. For this particular project, I will be using the genome of an endophyte isolated from *Plantago lanceolata* of an unknown species in the *Pyronemataceae* family.  
+
 **Location:** OSC Pitzer cluster, project path: `/fs/ess/PAS2880/users/kstarr791/final_project/`
-**Software Source:** [Starfish GitHub Repository](`https://github.com/egluckthaler/starfish/wiki`)
+
+**Software Source:** [Starfish GitHub Repository](`https://github.com/egluckthaler/starfish/wiki`) Version 1.1.0
 
 ## Data
 *   **Genome Assembly:** `BUSCO_P_DX_prelim_2008299642.scaffolds.fasta`
@@ -99,6 +101,10 @@ This was a simple chain of commands, but it can also be prepared as a slurm scri
 Gene Finder Module is now complete.
 
 4.  **Element Finder Module:** Predicts mobile element boundaries around captains.
+
+Create a dedicated directory for good housekeeping:
+
+The first script for this module is `insert.sh` located in `scripts/`.
 
 
 
