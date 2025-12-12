@@ -10,25 +10,36 @@
 
 set -euo pipefail
 
-cd /fs/ess/PAS2880/users/kstarr791/final_project/analysis
+# ===== CONFIGURATION VARIABLES =====
+# Project structure
+PROJECT_BASE="/fs/ess/PAS2880/users/kstarr791/final_project"
+ANALYSIS_DIR="${PROJECT_BASE}/analysis"
+LOG_DIR="${ANALYSIS_DIR}/logs"
+OUTPUT_DIR="${ANALYSIS_DIR}/elementFinder_sensitive"
+
+# Container and software
+CONTAINER_PATH="${PROJECT_BASE}/software/containers/starfish.sif"
+STARFISH_EXEC="/opt/conda/envs/starfish/bin/starfish"
+
+cd "${ANALYSIS_DIR}"
 
 # Use a CLEAN output directory
-OUT_DIR="elementFinder_sensitive"
-mkdir -p $OUT_DIR
+mkdir -p "${OUTPUT_DIR}"
 
 # We are removing the flankcov option which was flagged
 
 echo "=== Starting SENSITIVE Element Finder Search ==="
 echo "Genome context: Novel, phylogenetically divergent"
 echo "Parameters set for high sensitivity (low pid, short hsp)"
-apptainer exec ../software/containers/starfish.sif /opt/conda/envs/starfish/bin/starfish insert \
+apptainer exec "${CONTAINER_PATH}" \
+    "${STARFISH_EXEC}" insert \
     -T 2 \
     -a ome2assembly.txt \
     -d blastdb/BUSCO_P_DX_prelim_2008299642.assemblies \
     -b geneFinder/BUSCO.bed \
     -i tyr \
     -x BUSCO_sensitive \
-    -o $OUT_DIR \
+    -o "${OUTPUT_DIR}" \
     --pid 35 \
     --hsp 100 \
     --upstream 0-20000 \

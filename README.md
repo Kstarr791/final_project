@@ -112,7 +112,7 @@ I will adapt the software pipeline to simply complete it, but if trying this wit
 
 ### Summarize
 
-Inserting an empty `.insert.bed` file for the program to continue. 
+Inserting an empty `.insert.bed` file for the program to continue, since there was none produced with the lack of candidate regions. 
 
 ```
 cd /fs/ess/PAS2880/users/kstarr791/final_project/analysis
@@ -175,9 +175,15 @@ ggsave(output_plot, plot = p, width = 12, height = 8, dpi = 300)
 print(paste("Plot saved to:", output_plot))
 ```
 
+---
+---
+
+## **Optional Steps:**
+The below steps are optional, but attempted for further analysis of genomic repeats in the context of tyr gene neighborhoods.
+
 ## 6.  **RepeatModeler**
 
-I will use RepeatModeler to look for genomic repeats. 
+I will use RepeatModeler to look for genomic repeats independent of the Starfish ElementFinder. 
 DeepSeek AI recommends that we do this via conda. 
 
 ```
@@ -286,7 +292,7 @@ cut -f7 tyr_neighborhood_repeats.txt | sort | uniq -c | sort -nr
 ## 7.  **Additional Analyses and Figures**
 
 I will attempt to do an additional R script *just for fun* that I will have DeepSeek AI produce for me for my own curiosity's sake.
-Further analysis of tyr genes, we will be creating a multi-panel summary figure that answers three key questions:
+For further analysis of tyr genes, we will be creating a multi-panel summary figure that answers three key questions:
 
     1. How long are the tyr genes? (Histogram)
 

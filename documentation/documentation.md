@@ -767,4 +767,5 @@ I will create a slurm script for this process and integrate DeepSeek's fix recom
 
 The script will be `scripts/repeatclassifier`. 
 
-I will run this overnight.
+I will run this overnight. The job failed again with the same error about missing RepeatMasker.lib.nsq.  I will need to build the BLAST db and re-run.  I will save this step for after everything else in the project is complete, if there is time, since this is all optional.
+

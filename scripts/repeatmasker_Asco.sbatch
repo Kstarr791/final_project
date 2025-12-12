@@ -8,6 +8,8 @@
 #SBATCH --output=analysis/logs/repeatmasker_%j.out
 #SBATCH --error=analysis/logs/repeatmasker_%j.err
 
+# This is an OPTIONAL script to run RepeatMasker with Ascomycota-specific library, WIP
+
 set -euo pipefail
 echo "=== Starting RepeatMasker (Ascomycota-specific) ==="
 echo "Job ID: $SLURM_JOB_ID"

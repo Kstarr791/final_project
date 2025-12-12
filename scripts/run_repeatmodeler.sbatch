@@ -8,6 +8,8 @@
 #SBATCH --output=analysis/logs/repeatmodeler_%j.out
 #SBATCH --error=analysis/logs/repeatmodeler_%j.err
 
+# OPTIONAL script for running RepeatModeler to find genomic repeats independently of Starfish
+
 set -euo pipefail
 echo "=== Starting RepeatModeler (Optimized) ==="
 echo "Job ID: $SLURM_JOB_ID | Genome: ~126 Mbp"

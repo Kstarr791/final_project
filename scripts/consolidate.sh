@@ -9,24 +9,35 @@
 #SBATCH --error=analysis/logs/consolidate_%j.err
 set -euo pipefail
 
+# ===== CONFIGURATION VARIABLES =====
+# Project structure
+PROJECT_BASE="/fs/ess/PAS2880/users/kstarr791/final_project"
+ANALYSIS_DIR="${PROJECT_BASE}/analysis"
+LOG_DIR="${ANALYSIS_DIR}/logs"
+OUTPUT_DIR="${ANALYSIS_DIR}/consolidate"
+
+# Container and software
+CONTAINER_PATH="${PROJECT_BASE}/software/containers/starfish.sif"
+STARFISH_EXEC="/opt/conda/envs/starfish/bin/starfish"
+
 # JOB SETUP
 echo "=== Starting Consolidation Job ==="
 echo "Job ID: $SLURM_JOB_ID"
 echo "Start Time: $(date)"
 echo "Working Directory: $(pwd)"
 
-# Ensure the log directory exists
-mkdir -p analysis/logs
+# Ensure the log directory exists or it could fail silently
+mkdir -p "${LOG_DIR}"
 
 # CORE ANALYSIS: CONSOLIDATE ANNOTATIONS
 
 # Navigate to the analysis directory
-cd /fs/ess/PAS2880/users/kstarr791/final_project/analysis
+cd "${ANALYSIS_DIR}"
 
 echo "Running: starfish consolidate"
-apptainer exec ../software/containers/starfish.sif \
-    /opt/conda/envs/starfish/bin/starfish consolidate \
-    -o ./ \
+apptainer exec "${CONTAINER_PATH}" \
+    "{$STARFISH_EXEC}" consolidate \
+    -o "${OUTPUT_DIR}/" \
     -g gff3/BUSCO_P_DX_prelim_2008299642.final.gff3 \
     -G geneFinder/BUSCO_tyr.filt.gff
 
