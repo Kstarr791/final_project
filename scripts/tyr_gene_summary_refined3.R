@@ -86,10 +86,13 @@ plot_b <- ggplot(tyr_genes, aes(x = start / 1e3, y = reorder(scaffold, start), c
   theme_minimal() +
   theme(axis.text.y = element_text(size = 6))
 
+# Calculate highlight_scaffold BEFORE building the plot
+highlight_scaffold <- neighborhoods$scaffold[neighborhoods$neighborhood_name == containing_neighborhood]
+
 # Plot C: Bar chart of neighborhood sizes
 plot_c <- ggplot(neighborhoods, 
                  aes(x = reorder(neighborhood_id, neighborhood_size_kb), 
-                     y = neighborhood_size_kb,  # CHANGED FROM 'size_kb' to 'neighborhood_size_kb'
+                     y = neighborhood_size_kb,
                      fill = is_large_gene_home)) +
   geom_bar(stat = "identity") +
   scale_fill_manual(values = c("FALSE" = "gray70", "TRUE" = "coral2"),
@@ -99,7 +102,8 @@ plot_c <- ggplot(neighborhoods,
        y = "Size (kilobases)",
        subtitle = paste("Largest tyr gene (", round(largest_tyr$length_kb, 1), " kb) is in ",
                         neighborhoods$neighborhood_id[neighborhoods$neighborhood_name == containing_neighborhood],
-                        " (", containing_neighborhood, ")", sep = "")) +
+                        " on ", highlight_scaffold, 
+                        " (neighborhood: ", containing_neighborhood, ")", sep = "")) +
   coord_flip() +
   theme_minimal()
 
@@ -108,7 +112,7 @@ final_plot <- plot_a / plot_b / plot_c +  # Stack vertically
   plot_layout(heights = c(1, 1.5, 2))    # Adjust panel heights
 
 # Save the figure
-figure_path <- "../figures/tyr_gene_summary_refined2.png"
+figure_path <- "../figures/tyr_gene_summary_refined3.png"
 dir.create(dirname(figure_path), showWarnings = FALSE, recursive = TRUE)
 ggsave(figure_path, plot = final_plot, width = 10, height = 12, dpi = 300)
 

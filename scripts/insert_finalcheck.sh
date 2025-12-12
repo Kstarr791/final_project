@@ -28,7 +28,7 @@ apptainer exec ../software/containers/starfish.sif /opt/conda/envs/starfish/bin/
     -b geneFinder/BUSCO.bed \
     -i tyr \
     -x BUSCO_sensitive \
-    -o elementFinder_sensitive \
+    -o $OUT_DIR \
     --pid 35 \
     --hsp 100 \
     --upstream 0-20000 \

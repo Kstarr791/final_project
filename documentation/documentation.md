@@ -663,4 +663,63 @@ This is actually a really intereting graphic that shows the distribution of the 
 
 At this time, RepeatModeler continues to run overnight. I will check the results tomorrow and see if any repeats were identified that might correspond to the locations of the tyr genes.
 
+### RepeatModeler
+
 the outputs of RepeatModeler are located in `final_project/analysis/assembly/RM_2529430.ThuDec110211332025`. This was not intentional, I forgot to set the output directory in the script, so it just began writing to the working directory, which is set within the script to be /assembly, where the input genome is located. I can do some cleanup later if need be, but it is fairly contained. 
+
+RepeatModeler is now complete and appears to have been successful. 
+
+1171 repeat families were identified and are documented in `final_project/analysis/assembly/RM_2529430.ThuDec110211332025/consensi.fa` 
+
+Help from DeepSeek to interpret the log file (`final_project/analysis/assembly/repeatmodeler_fast.log`):
+
+```
+The log shows a partial failure in the RepeatClassifier step due to a missing file in the Conda installation. This means your repeats are not yet classified into known types (e.g., "LTR/Gypsy", "DNA/Tc1"). However, the unclassified library (consensi.fa) is still perfectly usable for your goal of finding repeats near tyr genes.
+```
+
+The AI also recommends the following steps:
+
+```
+1. Map Repeats	Run RepeatMasker using your new library. Goal: Create a .gff file with genomic coordinates of all repeats.
+
+2. Find Overlaps	Use BEDTools to find repeats in tyr neighborhoods. Goal: Generate a list of repeats overlapping each tyr neighborhood.
+
+3. Analyze Results	Count and characterize repeats near tyr genes vs. genome background. Goal: Test if tyr neighborhoods are enriched for specific repeats.
+```
+
+**1. Map Repeats**	Run RepeatMasker using your new library. Goal: Create a .gff file with genomic coordinates of all repeats.
+
+```
+cd /fs/ess/PAS2880/users/kstarr791/final_project/analysis/assembly/RM_2529430.ThuDec110211332025
+
+# Run RepeatMasker (create a Slurm script for this, as it's moderately intensive)
+
+# In a script: repeatmasker.sbatch
+module load miniconda3/24.1.2-py310
+conda activate repeatmodeler_env
+RepeatMasker -lib consensi.fa -gff -dir ./repeat_annotations ../BUSCO_P_DX_prelim_2008299642.scaffolds.fasta
+```
+
+The script is `scripts/repeatmasker.sbatch`.
+
+**2. Find Overlaps**	Use BEDTools to find repeats in tyr neighborhoods. Goal: Generate a list of repeats overlapping each tyr neighborhood.
+
+**3. Analyze Results**	Count and characterize repeats near tyr genes vs. genome background. Goal: Test if tyr neighborhoods are enriched for specific repeats.
+
+The following commands can be run directly in the terminal and includes both steps 2 and 3:
+
+```
+cd /fs/ess/PAS2880/users/kstarr791/final_project/analysis
+
+# Ensure BEDTools is available (usually is on OSC)
+module load bedtools
+
+# Find repeats overlapping tyr neighborhoods
+bedtools intersect -a geneFinder/BUSCO.bed \
+                   -b assembly/RM_2529430.ThuDec110211332025/repeat_annotations/*.gff \
+                   -wa -wb > tyr_neighborhood_repeats.txt
+
+# Count overlaps per neighborhood
+cut -f7 tyr_neighborhood_repeats.txt | sort | uniq -c | sort -nr
+```
+
