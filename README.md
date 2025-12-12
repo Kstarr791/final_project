@@ -243,6 +243,26 @@ The script is `scripts/repeatmasker.sbatch`
 The original script did a very broad and general search, we will use an updated one instead that builds a database for Ascomycota, to be more specific. 
 The script is `scripts/repeatmasker_Asco.sbatch`
 
+RepeatMasker failled to run RepeatClassifier. Need to do troubleshooting.
+
+Run
+```
+module load miniconda3/24.1.2-py310
+conda activate repeatmodeler_env
+which RepeatMasker
+```
+
+navigate to the installation dir, then run
+```
+perl/.configure
+```
+
+Configure HMMER3.1 & DFAM and RMBlast both with defaults. 
+
+Run adapted script:
+
+`scripts/repeatclassifier.sh`
+
 2. **Find Overlaps and Analyze Results**
 These steps will be performed after RepeatMasker completes. I will use BEDTools to find overlaps between the annotated repeats and the tyr gene neighborhoods, followed by analysis to determine if there is enrichment of specific repeats near tyr genes compared to the genome background.
 

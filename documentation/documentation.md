@@ -723,3 +723,48 @@ bedtools intersect -a geneFinder/BUSCO.bed \
 cut -f7 tyr_neighborhood_repeats.txt | sort | uniq -c | sort -nr
 ```
 
+This did not work. This is likely due to RepeatClassifier failing in RepeatMasker last time. 
+I managed to configure the perl settings for RepeatMasker with the help of DeepSeek
+
+```
+Add a Search Engine:
+   1. Crossmatch: [ Un-configured ]
+   2. RMBlast: [ Configured, Default ]
+   3. HMMER3.1 & DFAM: [ Configured ]
+   4. ABBlast: [ Un-configured ]
+```
+
+I configured HMMER3.1 & DFAM and RMBlast both with defaults. 
+
+This was accomplished by running
+```
+which RepeatMasker
+```
+
+navigating to the installation dir, then running
+```
+perl/.configure
+```
+
+This was all new to me, and an interesting exercise. 
+
+After doing this, I am re-running RepeatClassifier
+
+```
+cd final_project/analysis/assembly/RM_2529430.ThuDec110211332025
+
+RepeatClassifier -consensi consensi.fa -stockholm families.stk
+```
+
+Ran for a while and now we have a new issue.
+```
+Missing /users/PAS1046/kstarr791/.conda/envs/repeatmodeler_env/share/RepeatMasker/Libraries/RepeatMasker.lib.nsq!
+Please rerun the configure program in the RepeatMasker directory
+before running this script.
+```
+
+I will create a slurm script for this process and integrate DeepSeek's fix recommendation to "Re-run the RepeatMasker configuration and explicitly skip or point to Dfam for the BLAST database". 
+
+The script will be `scripts/repeatclassifier`. 
+
+I will run this overnight.
